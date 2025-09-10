@@ -24,28 +24,28 @@
 ## 🚀 快速開始
 
 ### 安裝依賴
-```bash
+\`\`\`bash
 npm install
-```
+\`\`\`
 
 ### 啟動開發服務器
-```bash
+\`\`\`bash
 npm start
-```
+\`\`\`
 
 遊戲將在 http://localhost:3004 啟動
 
 ### 文件結構
-```
+\`\`\`
 slot-game-tequity-client/
 ├── dist/
-│   ├── index.html      # 主遊戲頁面 (HTTP API)
-│   └── api-test.html   # API測試頁面
-├── node_modules/       # 依賴包
-└── package.json        # 專案配置
-```
+│   ├── index.html    # Tequity整合版本
+│   └── demo.html     # WebSocket演示版本
+├── node_modules/     # 依賴包
+└── package.json      # 專案配置
+\`\`\`
 
-## 🎯 遊戲說明
+## �� 遊戲說明
 
 ### 符號對應
 - 🍀 SYM1 (萬能符號)
@@ -61,47 +61,40 @@ slot-game-tequity-client/
 
 ## 🔧 配置說明
 
-### HTTP API 端點
-```javascript
-// 主要 API 端點
-const API_BASE = "http://localhost:8080";
-const endpoints = {
-    authenticate: "/authenticate",
-    info: "/info", 
-    play: "/play"
+### Tequity設定
+\`\`\`javascript
+const settings = {
+    game: "slot-game",
+    provider: "slot-game-provider",
+    operator: "demo",
+    wallet: "demo",
+    server: "http://localhost:8081",
+    // ... 其他配置
 };
-```
+\`\`\`
 
 ### 開發環境
 - **Client Port**: 3004
-- **API Server Port**: 8080
-- **通信協議**: HTTP REST API
+- **Server Port**: 8080 (WebSocket演示)
+- **Tequity Server**: 8081 (生產環境)
 
-## 🖥️ 頁面說明
+## 🖥️ 版本說明
 
 ### index.html
-- 主要遊戲界面
-- 使用HTTP API通信
-- 完整的遊戲功能和UI
+- 使用Tequity Connector SDK
+- 適用於正式整合環境
+- 需要完整的Tequity後端服務
 
-### api-test.html  
-- API測試和調試頁面
-- 用於驗證API端點
-- 開發和調試工具
+### demo.html  
+- 使用WebSocket直接連接
+- 適用於開發測試
+- 連接到原始遊戲服務器
 
 ## 🔗 相關專案
 
 - **服務器端**: [slot-game-tequity-server](../slot-game-tequity-server)
 - **原始遊戲**: [slot-game-master-original](../slot-game/slot-game-master-original)
 
-## 📋 變更歷史
-
-### v2.0 - Remove WebSocket Code
-- 移除所有WebSocket相關程式碼
-- 專注於HTTP API通信
-- 簡化專案結構
-- 提升穩定性和可維護性
-
 ---
 
-*基於HTTP API的穩定遊戲體驗，完美整合Tequity平台*
+*提供優質的遊戲體驗，完美整合Tequity平台*
