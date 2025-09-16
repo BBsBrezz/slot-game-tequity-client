@@ -312,7 +312,9 @@
             }
             
             async makeHTTPRequest(endpoint, data) {
-                const response = await fetch(`http://localhost:8080${endpoint}`, {
+                // GDK API 路徑格式: /provider/game/endpoint
+                const gdkEndpoint = `/slot-game-provider/slot-game${endpoint}`;
+                const response = await fetch(`http://localhost:8080${gdkEndpoint}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
