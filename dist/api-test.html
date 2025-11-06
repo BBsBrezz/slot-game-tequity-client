@@ -47,6 +47,25 @@
             font-weight: bold;
             margin: 15px 0;
         }
+
+        .balance-display.hidden {
+            display: none;
+        }
+
+        .login-prompt {
+            font-size: 1.2em;
+            color: #dc3545;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 8px;
+            border: 2px dashed #721c24;
+        }
+
+        .login-prompt.hidden {
+            display: none;
+        }
         
         .connection-status {
             padding: 8px 16px;
@@ -213,9 +232,10 @@
         <h1 class="game-title">🎰 老虎機遊戲 (HTTP API 測試)</h1>
         
         <div class="status-info">
-            <div class="connection-status disconnected" id="connectionStatus">未連接</div>
+            <div class="connection-status disconnected" id="connectionStatus">❌ 未登入</div>
             <div id="gameStatus">點擊下方按鈕測試 API</div>
-            <div class="balance-display">餘額: $<span id="balance">1000.00</span></div>
+            <div class="login-prompt" id="loginPrompt">🔐 請先點擊「測試認證」按鈕進行登入</div>
+            <div class="balance-display hidden" id="balanceDisplay">餘額: $<span id="balance">0.00</span></div>
         </div>
         
         <div class="test-buttons">
@@ -285,10 +305,23 @@
         let currentCurrency = 'EUR';
         let activeCheat = null; // 當前啟用的作弊碼
 
-        function log(message) {
+        function log(message, addSeparator = false) {
             const apiLog = document.getElementById('apiLog');
             const timestamp = new Date().toLocaleTimeString();
+            if (addSeparator) {
+                apiLog.innerHTML += `\n${'='.repeat(80)}\n`;
+            }
             apiLog.innerHTML += `[${timestamp}] ${message}\n`;
+            apiLog.scrollTop = apiLog.scrollHeight;
+        }
+
+        function logSeparator(title = '') {
+            const apiLog = document.getElementById('apiLog');
+            if (title) {
+                apiLog.innerHTML += `\n${'='.repeat(80)}\n[${title}]\n${'='.repeat(80)}\n`;
+            } else {
+                apiLog.innerHTML += `\n${'─'.repeat(80)}\n`;
+            }
             apiLog.scrollTop = apiLog.scrollHeight;
         }
         
@@ -331,6 +364,7 @@
         
         async function testGames() {
             try {
+                logSeparator('測試遊戲列表');
                 const response = await fetch(`http://localhost:8080/api/games`, {
                     method: 'GET',
                 });
@@ -344,7 +378,8 @@
 
         async function testAuthenticate() {
             try {
-                document.getElementById('connectionStatus').textContent = '測試中...';
+                logSeparator('測試認證');
+                document.getElementById('connectionStatus').textContent = '⏳ 認證中...';
                 document.getElementById('connectionStatus').className = 'connection-status connecting';
 
                 const result = await makeHTTPRequest('/authenticate', {
@@ -358,15 +393,17 @@
                 currentBalance = result.balance;
                 currentCurrency = result.currency;
 
-                // 更新畫面顯示
+                // 更新畫面顯示 - 隱藏登入提示，顯示餘額
+                document.getElementById('loginPrompt').classList.add('hidden');
+                document.getElementById('balanceDisplay').classList.remove('hidden');
                 document.getElementById('balance').textContent = currentBalance;
 
-                document.getElementById('connectionStatus').textContent = '認證成功';
+                document.getElementById('connectionStatus').textContent = '✅ 已登入';
                 document.getElementById('connectionStatus').className = 'connection-status connected';
                 log(`✅ 認證測試成功！SessionID: ${currentSessionId}, 餘額: ${currentBalance} ${currentCurrency}`);
 
             } catch (error) {
-                document.getElementById('connectionStatus').textContent = '認證失敗';
+                document.getElementById('connectionStatus').textContent = '❌ 認證失敗';
                 document.getElementById('connectionStatus').className = 'connection-status disconnected';
                 log(`❌ 認證測試失敗: ${error.message}`);
             }
@@ -374,6 +411,7 @@
         
         async function testConfig() {
             try {
+                logSeparator('測試配置');
                 const response = await fetch(`http://localhost:8080/slot-game-provider/slot-game/config`, {
                     method: 'GET',
                 });
@@ -387,6 +425,7 @@
 
         async function testBets() {
             try {
+                logSeparator('測試下注配置');
                 const response = await fetch(`http://localhost:8080/slot-game-provider/slot-game/bets`, {
                     method: 'GET',
                 });
@@ -400,6 +439,7 @@
 
         async function testInfo() {
             try {
+                logSeparator('測試資訊');
                 // 先確保已認證
                 if (!currentSessionId) {
                     log('⚠️ 需要先認證，自動執行認證...');
@@ -418,6 +458,7 @@
 
         async function testCheats() {
             try {
+                logSeparator('測試作弊');
                 const response = await fetch(`http://localhost:8080/slot-game-provider/slot-game/cheats`, {
                     method: 'GET',
                 });
@@ -457,6 +498,7 @@
 
         async function testValidate() {
             try {
+                logSeparator('測試驗證');
                 const result = await makeHTTPRequest('/validate', {
                     action: "main",
                     bet: 10
@@ -470,6 +512,7 @@
 
         async function testHealth() {
             try {
+                logSeparator('健康檢查');
                 const response = await fetch(`http://localhost:8080/health`, {
                     method: 'GET',
                 });
@@ -483,6 +526,7 @@
         
         async function testPlay() {
             try {
+                logSeparator('測試遊戲');
                 // 先確保已認證
                 if (!currentSessionId) {
                     log('⚠️ 需要先認證，自動執行認證...');
@@ -526,6 +570,7 @@
         }
         
         async function simulateSpin() {
+            logSeparator('模擬旋轉');
             const reels = ['reel1', 'reel2', 'reel3'];
             const symbols = Object.values(symbolMap);
 
@@ -692,6 +737,7 @@
         
         async function testAction() {
             try {
+                logSeparator('測試動作');
                 const result = await makeHTTPRequest('/action', {
                     next: ["main"],
                     config: {}
@@ -704,6 +750,7 @@
 
         async function testEvaluate() {
             try {
+                logSeparator('測試評估');
                 const result = await makeHTTPRequest('/evaluate', {
                     type: "regulatory-pt",
                     wagers: [{
@@ -723,6 +770,7 @@
 
         async function testChecksum() {
             try {
+                logSeparator('測試校驗');
                 const response = await fetch('http://localhost:8080/criticalFileChecksum?criticalFilePath=games/slot-game/index.ts');
                 const result = await response.json();
                 log('✅ 校驗 API 測試成功！');
