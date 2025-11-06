@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bonus Spin 測試</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Bonus Spin 流程測試</h1>
+    <button onclick="testBigWinFlow()">測試 BigWin 流程</button>
+    <button onclick="clearLogs()">清除日誌</button>
+    <div id="logs"></div>
+
+    <script>
+        let sessionId = null;
+
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.className = 'log';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testBigWinFlow() {
+            try {
+                // Step 1: 認證
+                log('步驟 1: 認證...');
+                const authResponse = await fetch('http://localhost:8080/authenticate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        operator: 'demo',
+                        wallet: 'demo',
+                        key: 'test-bonus-' + Date.now() + ':5000:usd'
+                    })
+                });
+                const authData = await authResponse.json();
+                sessionId = authData.sessionId;
+                log(`✅ 認證成功！SessionID: ${sessionId}, 餘額: ${authData.balance}`);
+
+                // Step 2: 使用 bigWin 作弊碼
+                log('步驟 2: 使用 bigWin 作弊碼旋轉...');
+                const playResponse = await fetch('http://localhost:8080/play', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: sessionId,
+                        action: 'main',
+                        bet: 10,
+                        cheat: 'bigWin'
+                    })
+                });
+                const playData = await playResponse.json();
+                log(`✅ 第一次旋轉完成！`);
+                log(`   符號: [${playData.wager.data.symbols.join(', ')}]`);
+                log(`   中獎類型: ${playData.wager.data.winType}`);
+                log(`   獲勝金額: ${playData.wager.win}`);
+                log(`   餘額: ${playData.balance}`);
+                log(`   Next actions: ${JSON.stringify(playData.wager.next)}`);
+
+                // Step 3: 檢查是否有 bonus_spin
+                if (playData.wager.next && playData.wager.next.includes('bonus_spin')) {
+                    log('🎆 檢測到 bonus_spin！等待 2 秒後執行...');
+
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+
+                    // Step 4: 執行 bonus spin
+                    log('步驟 3: 執行 Bonus Spin...');
+                    const bonusResponse = await fetch('http://localhost:8080/play', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sessionId: sessionId,
+                            action: 'bonus_spin',
+                            roundId: playData.roundId,
+                            bet: 10
+                        })
+                    });
+                    const bonusData = await bonusResponse.json();
+                    log(`✅ Bonus Spin 完成！`);
+                    log(`   符號: [${bonusData.wager.data.symbols.join(', ')}]`);
+                    log(`   中獎類型: ${bonusData.wager.data.winType || '未中獎'}`);
+                    log(`   獲勝金額: ${bonusData.wager.win}`);
+                    log(`   總獎金: ${bonusData.totalWin}`);
+                    log(`   新餘額: ${bonusData.balance}`);
+                    log(`   Next actions: ${JSON.stringify(bonusData.wager.next)}`);
+
+                    if (bonusData.wager.data.winType === 'super_win') {
+                        log('🎆🎆 恭喜觸發 SUPER WIN！！！');
+                    }
+                } else {
+                    log('❌ 沒有檢測到 bonus_spin action');
+                }
+
+            } catch (error) {
+                log(`❌ 錯誤: ${error.message}`);
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

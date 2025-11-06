@@ -219,9 +219,18 @@
         </div>
         
         <div class="test-buttons">
-            <button class="test-button" onclick="testAuthenticate()">測試認證 API</button>
-            <button class="test-button" onclick="testInfo()">測試資訊 API</button>
-            <button class="test-button" onclick="testPlay()">測試遊戲 API</button>
+            <button class="test-button" onclick="testGames()">測試遊戲列表</button>
+            <button class="test-button" onclick="testAuthenticate()">測試認證</button>
+            <button class="test-button" onclick="testConfig()">測試配置</button>
+            <button class="test-button" onclick="testBets()">測試下注</button>
+            <button class="test-button" onclick="testInfo()">測試資訊</button>
+            <button class="test-button" onclick="testCheats()">測試作弊</button>
+            <button class="test-button" onclick="testPlay()">測試遊戲</button>
+            <button class="test-button" onclick="testAction()">測試動作</button>
+            <button class="test-button" onclick="testValidate()">測試驗證</button>
+            <button class="test-button" onclick="testEvaluate()">測試評估</button>
+            <button class="test-button" onclick="testChecksum()">測試校驗</button>
+            <button class="test-button" onclick="testHealth()">健康檢查</button>
             <button class="test-button" onclick="clearLog()">清除日誌</button>
         </div>
         
@@ -264,12 +273,18 @@
         const symbolMap = {
             'SYM1': '🍀',
             'SYM2': '🍎',
-            'SYM3': '🍊', 
+            'SYM3': '🍊',
             'SYM4': '🍇',
             'SYM5': '🍓',
             'SYM6': '🥝'
         };
-        
+
+        // 全域變數
+        let currentSessionId = null;
+        let currentBalance = 0;
+        let currentCurrency = 'EUR';
+        let activeCheat = null; // 當前啟用的作弊碼
+
         function log(message) {
             const apiLog = document.getElementById('apiLog');
             const timestamp = new Date().toLocaleTimeString();
@@ -314,21 +329,42 @@
             }
         }
         
+        async function testGames() {
+            try {
+                const response = await fetch(`http://localhost:8080/api/games`, {
+                    method: 'GET',
+                });
+                const result = await response.json();
+                log(`遊戲列表 API 回應: ${JSON.stringify(result, null, 2)}`);
+                log('✅ 遊戲列表 API 測試成功！');
+            } catch (error) {
+                log(`❌ 遊戲列表 API 測試失敗: ${error.message}`);
+            }
+        }
+
         async function testAuthenticate() {
             try {
                 document.getElementById('connectionStatus').textContent = '測試中...';
                 document.getElementById('connectionStatus').className = 'connection-status connecting';
-                
+
                 const result = await makeHTTPRequest('/authenticate', {
                     operator: "demo",
                     wallet: "demo",
                     key: "test-player-123:1000:eur"
                 });
-                
+
+                // 儲存認證資訊
+                currentSessionId = result.sessionId;
+                currentBalance = result.balance;
+                currentCurrency = result.currency;
+
+                // 更新畫面顯示
+                document.getElementById('balance').textContent = currentBalance;
+
                 document.getElementById('connectionStatus').textContent = '認證成功';
                 document.getElementById('connectionStatus').className = 'connection-status connected';
-                log('✅ 認證測試成功！');
-                
+                log(`✅ 認證測試成功！SessionID: ${currentSessionId}, 餘額: ${currentBalance} ${currentCurrency}`);
+
             } catch (error) {
                 document.getElementById('connectionStatus').textContent = '認證失敗';
                 document.getElementById('connectionStatus').className = 'connection-status disconnected';
@@ -336,34 +372,148 @@
             }
         }
         
+        async function testConfig() {
+            try {
+                const response = await fetch(`http://localhost:8080/slot-game-provider/slot-game/config`, {
+                    method: 'GET',
+                });
+                const result = await response.json();
+                log(`配置 API 回應: ${JSON.stringify(result, null, 2)}`);
+                log('✅ 配置 API 測試成功！');
+            } catch (error) {
+                log(`❌ 配置 API 測試失敗: ${error.message}`);
+            }
+        }
+
+        async function testBets() {
+            try {
+                const response = await fetch(`http://localhost:8080/slot-game-provider/slot-game/bets`, {
+                    method: 'GET',
+                });
+                const result = await response.json();
+                log(`下注配置 API 回應: ${JSON.stringify(result, null, 2)}`);
+                log('✅ 下注配置 API 測試成功！');
+            } catch (error) {
+                log(`❌ 下注配置 API 測試失敗: ${error.message}`);
+            }
+        }
+
         async function testInfo() {
             try {
+                // 先確保已認證
+                if (!currentSessionId) {
+                    log('⚠️ 需要先認證，自動執行認證...');
+                    await testAuthenticate();
+                }
+
                 const result = await makeHTTPRequest('/info', {
-                    sessionId: 'test-session'
+                    sessionId: currentSessionId
                 });
                 log('✅ 資訊 API 測試成功！');
+                log(`遊戲資訊: ${JSON.stringify(result, null, 2)}`);
             } catch (error) {
                 log(`❌ 資訊 API 測試失敗: ${error.message}`);
+            }
+        }
+
+        async function testCheats() {
+            try {
+                const response = await fetch(`http://localhost:8080/slot-game-provider/slot-game/cheats`, {
+                    method: 'GET',
+                });
+                const result = await response.json();
+                log(`作弊 API 回應: ${JSON.stringify(result, null, 2)}`);
+                log('✅ 作弊 API 測試成功！');
+
+                // 循環切換作弊碼：bigWin → superWin → win → null
+                if (result.main && result.main.length > 0) {
+                    if (!activeCheat) {
+                        activeCheat = 'bigWin';  // 第一次按就設為 bigWin，方便測試 bonus spin
+                    } else if (activeCheat === 'bigWin') {
+                        activeCheat = 'superWin';
+                    } else if (activeCheat === 'superWin') {
+                        activeCheat = 'win';
+                    } else {
+                        activeCheat = null;
+                    }
+
+                    if (activeCheat) {
+                        let cheatDescription = {
+                            'win': '普通中獎 (2x)',
+                            'bigWin': 'BigWin (10x) + Bonus Spin',
+                            'superWin': 'SuperWin (50x)'
+                        };
+                        log(`🎯 已啟用作弊碼: ${activeCheat} - ${cheatDescription[activeCheat]}`);
+                        document.getElementById('gameStatus').textContent = `🎯 作弊模式: ${activeCheat}`;
+                    } else {
+                        log(`🎯 作弊碼已關閉 - 恢復正常隨機模式`);
+                        document.getElementById('gameStatus').textContent = '頁面已載入，可以測試 API';
+                    }
+                }
+            } catch (error) {
+                log(`❌ 作弊 API 測試失敗: ${error.message}`);
+            }
+        }
+
+        async function testValidate() {
+            try {
+                const result = await makeHTTPRequest('/validate', {
+                    action: "main",
+                    bet: 10
+                });
+                log(`驗證結果: ${result.valid ? '有效' : '無效'}`);
+                log('✅ 驗證 API 測試成功！');
+            } catch (error) {
+                log(`❌ 驗證 API 測試失敗: ${error.message}`);
+            }
+        }
+
+        async function testHealth() {
+            try {
+                const response = await fetch(`http://localhost:8080/health`, {
+                    method: 'GET',
+                });
+                const result = await response.text();
+                log(`健康檢查回應: ${result}`);
+                log('✅ 健康檢查測試成功！');
+            } catch (error) {
+                log(`❌ 健康檢查測試失敗: ${error.message}`);
             }
         }
         
         async function testPlay() {
             try {
-                const betAmount = parseInt(document.getElementById('betAmount').value);
+                // 先確保已認證
+                if (!currentSessionId) {
+                    log('⚠️ 需要先認證，自動執行認證...');
+                    await testAuthenticate();
+                }
+
+                const betAmount = parseInt(document.getElementById('betAmount').value) || 5;
                 const result = await makeHTTPRequest('/play', {
-                    sessionId: 'test-session',
+                    sessionId: currentSessionId,
                     action: "main",
                     bet: betAmount
                 });
-                log('✅ 遊戲 API 測試成功！');
-                
-                // 如果有遊戲結果，顯示符號
-                if (result.data && result.data.symbols) {
-                    displaySymbols(result.data.symbols);
-                } else if (result.symbols) {
-                    displaySymbols(result.symbols);
+
+                log(`✅ 遊戲 API 測試成功！下注: ${betAmount}, 獲勝: ${result.wager.win}`);
+
+                // 顯示遊戲結果
+                if (result.wager && result.wager.data && result.wager.data.symbols) {
+                    displaySymbols(result.wager.data.symbols);
+                    const isWin = result.wager.data.isWin;
+                    const winAmount = result.wager.win || 0;
+
+                    if (isWin) {
+                        log(`🎉 中獎！符號: [${result.wager.data.symbols.join(', ')}], 獲得: ${winAmount}`);
+                    } else {
+                        log(`😢 沒中獎。符號: [${result.wager.data.symbols.join(', ')}]`);
+                    }
+
+                    // 更新餘額
+                    document.getElementById('balance').textContent = result.balance;
                 }
-                
+
             } catch (error) {
                 log(`❌ 遊戲 API 測試失敗: ${error.message}`);
             }
@@ -375,28 +525,213 @@
             document.getElementById('reel3').textContent = symbolMap[symbols[2]] || symbols[2];
         }
         
-        function simulateSpin() {
+        async function simulateSpin() {
             const reels = ['reel1', 'reel2', 'reel3'];
             const symbols = Object.values(symbolMap);
-            
+
             // 添加旋轉動畫
             reels.forEach(reelId => {
                 document.getElementById(reelId).classList.add('spinning');
             });
-            
-            // 1秒後停止並顯示隨機符號
-            setTimeout(() => {
+
+            document.getElementById('resultDisplay').textContent = '旋轉中...';
+            document.getElementById('spinButton').disabled = true;
+
+            try {
+                // 先確保已認證
+                if (!currentSessionId) {
+                    log('⚠️ 需要先認證，自動執行認證...');
+                    await testAuthenticate();
+                }
+
+                // 呼叫後端 /play API
+                const betAmount = parseInt(document.getElementById('betAmount').value) || 5;
+                const playRequest = {
+                    sessionId: currentSessionId,
+                    action: "main",
+                    bet: betAmount
+                };
+
+                // 如果有啟用作弊碼，加入請求中
+                if (activeCheat) {
+                    playRequest.cheat = activeCheat;
+                    log(`🎯 使用作弊碼: ${activeCheat}`);
+                }
+
+                const result = await makeHTTPRequest('/play', playRequest);
+
+                log('🎰 開始旋轉！下注金額: ' + betAmount);
+
+                // 使用後清除作弊碼（一次性使用）
+                if (activeCheat) {
+                    log(`🎯 作弊碼已使用並清除`);
+                    activeCheat = null;
+                    document.getElementById('gameStatus').textContent = '頁面已載入，可以測試 API';
+                }
+
+                // 1秒後停止並顯示真實結果
+                setTimeout(async () => {
+                    // 顯示後端返回的符號
+                    if (result.wager && result.wager.data && result.wager.data.symbols) {
+                        const serverSymbols = result.wager.data.symbols;
+                        reels.forEach((reelId, index) => {
+                            const reel = document.getElementById(reelId);
+                            reel.textContent = symbolMap[serverSymbols[index]] || '❓';
+                            reel.classList.remove('spinning');
+                        });
+
+                        // 顯示結果
+                        const isWin = result.wager.data.isWin;
+                        const winAmount = result.wager.win || 0;
+                        const winType = result.wager.data.winType;
+                        let balance = result.balance;
+
+                        if (isWin) {
+                            let winMessage = `🎉 恭喜中獎！獲得 ${winAmount} 元！`;
+                            if (winType === 'big_win') {
+                                winMessage = `🎆 BigWin！獲得 ${winAmount} 元！準備 Bonus Spin...`;
+                            }
+                            document.getElementById('resultDisplay').textContent = winMessage;
+                            log(`✅ 中獎！類型: ${winType}, 符號: [${serverSymbols.join(', ')}], 獲得: ${winAmount}, 餘額: ${balance}`);
+                        } else {
+                            document.getElementById('resultDisplay').textContent =
+                                `😢 沒有中獎！餘額: ${balance}`;
+                            log(`❌ 沒中獎。符號: [${serverSymbols.join(', ')}], 餘額: ${balance}`);
+                        }
+
+                        // 更新餘額顯示
+                        document.getElementById('balance').textContent = balance;
+
+                        // 檢查是否有 next 動作（bigWin 觸發 bonus_spin）
+                        if (result.wager.next && result.wager.next.includes('bonus_spin')) {
+                            log('🎰 觸發 Bonus Spin！等待 2 秒後自動旋轉...');
+                            document.getElementById('gameStatus').textContent = '🎆 BigWin - Bonus Spin 即將開始！';
+
+                            // 2秒後執行 bonus spin
+                            setTimeout(async () => {
+                                try {
+                                    // 再次添加旋轉動畫
+                                    reels.forEach(reelId => {
+                                        document.getElementById(reelId).classList.add('spinning');
+                                    });
+                                    document.getElementById('resultDisplay').textContent = '🎰 Bonus Spin 旋轉中...';
+
+                                    // 標準 Tequity 做法：再次調用 /play，傳遞 action 和 roundId
+                                    const bonusResult = await makeHTTPRequest('/play', {
+                                        sessionId: currentSessionId,
+                                        action: 'bonus_spin',
+                                        roundId: result.roundId,
+                                        bet: betAmount
+                                    });
+
+                                    log('🎆 Bonus Spin 完成！');
+
+                                    // 1秒後顯示 bonus spin 結果
+                                    setTimeout(() => {
+                                        if (bonusResult.wager && bonusResult.wager.data) {
+                                            const bonusSymbols = bonusResult.wager.data.symbols;
+                                            reels.forEach((reelId, index) => {
+                                                const reel = document.getElementById(reelId);
+                                                reel.textContent = symbolMap[bonusSymbols[index]] || '❓';
+                                                reel.classList.remove('spinning');
+                                            });
+
+                                            const bonusWin = bonusResult.wager.win || 0;
+                                            const bonusWinType = bonusResult.wager.data.winType;
+                                            const totalWin = bonusResult.totalWin || (winAmount + bonusWin);
+                                            balance = bonusResult.balance;
+
+                                            if (bonusWinType === 'super_win') {
+                                                document.getElementById('resultDisplay').textContent =
+                                                    `🎆🎆 SUPER WIN！！！獲得 ${bonusWin} 元！總獎金: ${totalWin} 元！餘額: ${balance}`;
+                                                log(`🎆🎆 SUPER WIN！符號: [${bonusSymbols.join(', ')}], Bonus 獎金: ${bonusWin}, 總獎金: ${totalWin}, 新餘額: ${balance}`);
+                                            } else if (bonusResult.wager.data.isWin) {
+                                                document.getElementById('resultDisplay').textContent =
+                                                    `🎉 Bonus Spin 中獎！獲得 ${bonusWin} 元！總獎金: ${totalWin} 元！餘額: ${balance}`;
+                                                log(`✅ Bonus Spin 中獎！符號: [${bonusSymbols.join(', ')}], 獎金: ${bonusWin}, 總獎金: ${totalWin}, 新餘額: ${balance}`);
+                                            } else {
+                                                document.getElementById('resultDisplay').textContent =
+                                                    `😢 Bonus Spin 沒中獎。總獎金: ${totalWin} 元，餘額: ${balance}`;
+                                                log(`❌ Bonus Spin 沒中獎。符號: [${bonusSymbols.join(', ')}], 總獎金: ${totalWin}, 餘額: ${balance}`);
+                                            }
+
+                                            // 更新餘額顯示
+                                            document.getElementById('balance').textContent = balance;
+                                            document.getElementById('gameStatus').textContent = '頁面已載入，可以測試 API';
+                                        }
+                                        document.getElementById('spinButton').disabled = false;
+                                    }, 1000);
+
+                                } catch (error) {
+                                    log(`❌ Bonus Spin 失敗: ${error.message}`);
+                                    reels.forEach(reelId => {
+                                        document.getElementById(reelId).classList.remove('spinning');
+                                    });
+                                    document.getElementById('spinButton').disabled = false;
+                                }
+                            }, 2000);
+                        } else {
+                            document.getElementById('spinButton').disabled = false;
+                        }
+                    } else {
+                        document.getElementById('resultDisplay').textContent = '❌ API 返回格式錯誤';
+                        log(`❌ API 返回格式錯誤: ${JSON.stringify(result)}`);
+                        document.getElementById('spinButton').disabled = false;
+                    }
+                }, 1000);
+
+            } catch (error) {
                 reels.forEach(reelId => {
-                    const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-                    const reel = document.getElementById(reelId);
-                    reel.textContent = randomSymbol;
-                    reel.classList.remove('spinning');
+                    document.getElementById(reelId).classList.remove('spinning');
                 });
-                
-                document.getElementById('resultDisplay').textContent = '模擬旋轉完成！';
-            }, 1000);
+                document.getElementById('resultDisplay').textContent = '❌ API 呼叫失敗';
+                document.getElementById('spinButton').disabled = false;
+                log(`❌ 旋轉失敗: ${error.message}`);
+            }
         }
         
+        async function testAction() {
+            try {
+                const result = await makeHTTPRequest('/action', {
+                    next: ["main"],
+                    config: {}
+                });
+                log('✅ 動作 API 測試成功！');
+            } catch (error) {
+                log(`❌ 動作 API 測試失敗: ${error.message}`);
+            }
+        }
+
+        async function testEvaluate() {
+            try {
+                const result = await makeHTTPRequest('/evaluate', {
+                    type: "regulatory-pt",
+                    wagers: [{
+                        data: {
+                            symbols: ['SYM1', 'SYM2', 'SYM3']
+                        },
+                        win: 0,
+                        bet: 5
+                    }]
+                });
+                log('✅ 評估 API 測試成功！');
+                log(`評估結果: ${JSON.stringify(result, null, 2)}`);
+            } catch (error) {
+                log(`❌ 評估 API 測試失敗: ${error.message}`);
+            }
+        }
+
+        async function testChecksum() {
+            try {
+                const response = await fetch('http://localhost:8080/criticalFileChecksum?criticalFilePath=games/slot-game/index.ts');
+                const result = await response.json();
+                log('✅ 校驗 API 測試成功！');
+                log(`校驗碼: ${result.checksum}`);
+            } catch (error) {
+                log(`❌ 校驗 API 測試失敗: ${error.message}`);
+            }
+        }
+
         // 頁面載入完成
         document.addEventListener('DOMContentLoaded', () => {
             log('🎮 頁面載入完成，可以開始測試 API！');
