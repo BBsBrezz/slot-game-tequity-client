@@ -227,27 +227,28 @@
     </div>
 
     <script>
-        class SlotGameHTTPClient {
+        class SlotGameConnectorClient {
             constructor() {
                 this.isSpinning = false;
                 this.balance = 0;
                 this.gameInitialized = false;
-                this.sessionId = null;
-                this.sessionToken = null;
-                
+                this.connector = null;
+                this.currency = 'EUR';
+                this.currencySymbol = '€';
+
                 // Symbol mapping for display
                 this.symbolMap = {
                     'SYM1': '🍀', // Wild symbol
                     'SYM2': '🍎',
-                    'SYM3': '🍊', 
+                    'SYM3': '🍊',
                     'SYM4': '🍇',
                     'SYM5': '🍓',
                     'SYM6': '🥝'
                 };
-                
+
                 this.initializeElements();
             }
-            
+
             initializeElements() {
                 this.elements = {
                     connectionStatus: document.getElementById('connectionStatus'),
@@ -260,158 +261,171 @@
                     betAmount: document.getElementById('betAmount'),
                     resultDisplay: document.getElementById('resultDisplay')
                 };
-                
+
                 this.elements.spinButton.addEventListener('click', () => this.spin());
             }
-            
+
             async initialize() {
                 try {
                     this.updateConnectionStatus('connecting', '連接中...');
-                    this.updateGameStatus('正在連接到Tequity平台...');
-                    
-                    // Generate random player for demo
+                    this.updateGameStatus('正在初始化Tequity Connector...');
+
+                    // Define random player index
                     const randomPlayerIndex = Math.floor(Math.random() * 1000);
-                    
-                    // Authenticate with Tequity HTTP API
-                    const authResponse = await this.makeHTTPRequest('/authenticate', {
+
+                    // Initialize connector with settings (simplified like example-game-client)
+                    const settings = {
+                        game: "slot-game",
+                        provider: "slot-game-provider",
                         operator: "demo",
                         wallet: "demo",
-                        key: `test-player-${randomPlayerIndex}:1000:eur`
-                    });
-                    
-                    console.log('Auth response:', authResponse);
-                    this.sessionId = authResponse.sessionId || authResponse.session || 'demo-session';
-                    this.sessionToken = authResponse.token || authResponse.sessionToken;
-                    
-                    this.updateConnectionStatus('connected', '已連接');
-                    this.updateGameStatus('正在獲取遊戲資訊...');
+                        key: `test-player-${randomPlayerIndex}:1000:eur`,
+                        server: "https://test.tequity.ventures",
+                    };
 
-                    // Get game info
+                    // Create connector instance (using simplified signature)
+                    this.connector = await window.connector.create(settings, {}, {});
+                    window.connector = this.connector;
+                    console.log('Connector created:', this.connector);
+
+                    this.updateGameStatus('正在驗證玩家...');
+
+                    // Authenticate player using connector
+                    const authResult = await this.connector.authenticate();
+                    console.log('Authentication result:', authResult);
+
+                    this.balance = authResult.balance;
+                    this.currency = authResult.currency;
+                    this.currencySymbol = authResult.currencySymbol || authResult.currency;
+
+                    this.updateConnectionStatus('connected', '已連接');
+                    this.updateGameStatus('正在獲取遊戲配置...');
+
+                    // Get game info using connector
                     try {
-                        const infoResponse = await this.makeHTTPRequest('/info', {
-                            sessionId: this.sessionId
-                        });
-                        console.log('Info response:', infoResponse);
+                        const infoResult = await this.connector.info();
+                        console.log('Game info:', infoResult);
+
+                        // You can use config, state, bets, settings from infoResult
+                        if (infoResult.bets && infoResult.bets.main) {
+                            console.log('Available bets:', infoResult.bets.main.available);
+                        }
                     } catch (infoError) {
-                        console.log('Info endpoint not available, continuing...');
+                        console.log('Info not available:', infoError);
                     }
 
-                    // Initialize with default balance
-                    this.balance = authResponse.balance || 1000;
+                    // Check for unfinished rounds
+                    try {
+                        const unfinishedRound = await this.connector.recover();
+                        if (unfinishedRound && unfinishedRound.balance !== undefined) {
+                            console.log('Recovered unfinished round, balance:', unfinishedRound.balance);
+                            this.balance = unfinishedRound.balance;
+                        }
+                    } catch (recoverError) {
+                        console.log('No unfinished rounds:', recoverError);
+                    }
+
                     this.updateBalance();
-                    
                     this.gameInitialized = true;
                     this.updateGameStatus('遊戲已準備就緒！');
                     this.elements.spinButton.disabled = false;
-                    
+
                 } catch (error) {
                     console.error('Game initialization failed:', error);
                     this.updateConnectionStatus('disconnected', '連接失敗');
                     this.updateGameStatus(`初始化失敗: ${error.message}`);
                 }
             }
-            
-            async makeHTTPRequest(endpoint, data) {
-                // GDK API 路徑格式: /provider/game/endpoint
-                const gdkEndpoint = `/slot-game-provider/slot-game${endpoint}`;
-                const response = await fetch(`http://localhost:8080${gdkEndpoint}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-                
-                return await response.json();
-            }
-            
+
             async spin() {
-                if (!this.gameInitialized || this.isSpinning) {
+                if (!this.gameInitialized || this.isSpinning || !this.connector) {
                     return;
                 }
-                
+
                 const betAmount = parseInt(this.elements.betAmount.value);
-                
+
                 if (betAmount > this.balance) {
                     this.updateResultDisplay('餘額不足！', false);
                     return;
                 }
-                
+
                 this.isSpinning = true;
                 this.elements.spinButton.disabled = true;
                 this.updateResultDisplay('旋轉中...', null);
-                
+
                 // Add spinning animation
                 [this.elements.reel1, this.elements.reel2, this.elements.reel3].forEach(reel => {
                     reel.classList.add('spinning');
                 });
-                
+
                 try {
-                    // Call Tequity play API via HTTP
-                    const playResponse = await this.makeHTTPRequest('/play', {
-                        sessionId: this.sessionId,
-                        action: "main",
-                        bet: betAmount
-                    });
-                    
-                    console.log('Play response:', playResponse);
-                    
-                    // Process game result - adapt to actual Tequity response format
-                    let symbols, isWin, winAmount;
-                    
-                    if (playResponse.symbols) {
-                        // Direct format
-                        symbols = playResponse.symbols;
-                        isWin = playResponse.isWin || playResponse.win > 0;
-                        winAmount = playResponse.win || playResponse.winAmount || 0;
-                    } else if (playResponse.data) {
-                        // Nested format
-                        symbols = playResponse.data.symbols;
-                        isWin = playResponse.data.isWin || playResponse.win > 0;
-                        winAmount = playResponse.win || playResponse.data.winAmount || 0;
-                    } else {
-                        // Fallback for testing
-                        symbols = ['SYM2', 'SYM3', 'SYM4'];
-                        isWin = false;
-                        winAmount = 0;
+                    // Call Tequity play API via Connector
+                    const playResult = await this.connector.play(
+                        "main",      // action
+                        betAmount,   // bet amount
+                        null,        // params (optional)
+                        null,        // cheat (optional, for development)
+                        false,       // complete (we'll complete manually if needed)
+                        false        // asyncWin
+                    );
+
+                    console.log('Play result:', playResult);
+
+                    // Extract wager data from connector response
+                    const wager = playResult.wager;
+                    const symbols = wager.data?.symbols || wager.data || ['SYM2', 'SYM3', 'SYM4'];
+                    const winAmount = wager.win || 0;
+                    const isWin = winAmount > 0;
+
+                    // Update balance from play result
+                    if (playResult.balance !== undefined) {
+                        this.balance = playResult.balance;
                     }
-                    
-                    // Update balance
-                    if (playResponse.balance !== undefined) {
-                        this.balance = playResponse.balance;
-                    } else {
-                        this.balance = this.balance - betAmount + winAmount;
+
+                    // If there are next actions (multi-wager round), we might need to handle them
+                    if (wager.next && wager.next.length > 0) {
+                        console.log('Next actions available:', wager.next);
+                        // For simple slot, we'll just complete the round
                     }
-                    this.updateBalance();
-                    
+
                     // Show symbols with delay
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         this.displaySymbols(symbols);
-                        this.displayResult(isWin, winAmount, playResponse.winType);
-                        
+                        this.displayResult(isWin, winAmount);
+
+                        // Complete the round to pay the win
+                        if (isWin && winAmount > 0) {
+                            try {
+                                const completeResult = await this.connector.complete(false); // asyncWin = false
+                                if (completeResult.balance !== undefined) {
+                                    this.balance = completeResult.balance;
+                                }
+                                console.log('Round completed, final balance:', this.balance);
+                            } catch (completeError) {
+                                console.error('Complete failed:', completeError);
+                            }
+                        }
+
+                        this.updateBalance();
+
                         // Remove spinning animation
                         [this.elements.reel1, this.elements.reel2, this.elements.reel3].forEach(reel => {
                             reel.classList.remove('spinning');
                         });
-                        
+
                         this.isSpinning = false;
                         this.elements.spinButton.disabled = false;
                     }, 1000);
-                    
+
                 } catch (error) {
                     console.error('Spin failed:', error);
                     this.updateResultDisplay(`旋轉失敗: ${error.message}`, false);
-                    
+
                     // Remove spinning animation
                     [this.elements.reel1, this.elements.reel2, this.elements.reel3].forEach(reel => {
                         reel.classList.remove('spinning');
                     });
-                    
+
                     this.isSpinning = false;
                     this.elements.spinButton.disabled = false;
                 }
@@ -423,14 +437,9 @@
                 this.elements.reel3.textContent = this.symbolMap[symbols[2]] || symbols[2];
             }
             
-            displayResult(isWin, winAmount, winType) {
+            displayResult(isWin, winAmount) {
                 if (isWin) {
-                    let message = `🎉 恭喜！贏得 $${winAmount}！`;
-                    if (winType === 'three_of_a_kind') {
-                        message = `🎯 三個相同！贏得 $${winAmount}！`;
-                    } else if (winType === 'wild_combo') {
-                        message = `🍀 幸運組合！贏得 $${winAmount}！`;
-                    }
+                    const message = `🎉 恭喜！贏得 ${this.currencySymbol}${winAmount.toFixed(2)}！`;
                     this.updateResultDisplay(message, true);
                 } else {
                     this.updateResultDisplay('😔 這次運氣不好，再試一次！', false);
@@ -466,9 +475,9 @@
 
         // Initialize game when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            const game = new SlotGameHTTPClient();
+            const game = new SlotGameConnectorClient();
             game.initialize();
-            
+
             // Expose game instance for debugging
             window.slotGame = game;
         });
