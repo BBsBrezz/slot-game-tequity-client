@@ -245,6 +245,7 @@
             <button class="test-button" onclick="game.initialize()">Initialize</button>
             <button class="test-button" onclick="testInfo()">Info</button>
             <button class="test-button" onclick="testRecover()">Recover</button>
+            <button class="test-button" onclick="game.cycleCheat()">Cheats</button>
             <button class="test-button" onclick="clearLog()">Clear Log</button>
         </div>
 
@@ -292,6 +293,7 @@
                 this.connector = null;
                 this.currency = 'EUR';
                 this.currencySymbol = '€';
+                this.activeCheat = null; // Track active cheat code
 
                 // Symbol mapping for display
                 this.symbolMap = {
@@ -449,17 +451,28 @@
                 });
 
                 try {
+                    // Log cheat code if active
+                    if (this.activeCheat) {
+                        this.log(`🎯 Using cheat code: ${this.activeCheat}`);
+                    }
                     this.log(`🎰 Starting spin! Bet amount: ${betAmount}`);
 
                     // Call Tequity play API via Connector
                     const playResult = await this.connector.play(
-                        "main",      // action
-                        betAmount,   // bet amount
-                        null,        // params (optional)
-                        null,        // cheat (optional, for development)
-                        false,       // complete (we'll complete manually if needed)
-                        false        // asyncWin
+                        "main",            // action
+                        betAmount,         // bet amount
+                        null,              // params (optional)
+                        this.activeCheat,  // cheat (pass active cheat code)
+                        false,             // complete (we'll complete manually if needed)
+                        false              // asyncWin
                     );
+
+                    // Clear cheat after use (one-time use)
+                    if (this.activeCheat) {
+                        this.log(`🎯 Cheat code used and cleared`);
+                        this.activeCheat = null;
+                        this.updateGameStatus('Game ready!');
+                    }
 
                     this.log(`✅ Play result received`);
 
@@ -474,39 +487,141 @@
                         this.balance = playResult.balance;
                     }
 
-                    // If there are next actions (multi-wager round), we might need to handle them
-                    if (wager.next && wager.next.length > 0) {
-                        this.log(`ℹ️ Next actions available: ${wager.next.join(', ')}`);
-                        // For simple slot, we'll just complete the round
+                    // Check for bonus spin in next actions
+                    const hasBonusSpin = wager.next && wager.next.includes('bonus_spin');
+                    if (hasBonusSpin) {
+                        this.log(`🎰 Detected Bonus Spin trigger!`);
                     }
 
                     // Show symbols with delay
                     setTimeout(async () => {
                         this.displaySymbols(symbols);
-                        this.displayResult(isWin, winAmount);
 
-                        // Complete the round to pay the win
-                        if (isWin && winAmount > 0) {
-                            try {
-                                const completeResult = await this.connector.complete(false); // asyncWin = false
-                                if (completeResult.balance !== undefined) {
-                                    this.balance = completeResult.balance;
-                                }
-                                this.log(`✅ Round completed, final balance: ${this.balance}`);
-                            } catch (completeError) {
-                                this.log(`⚠️ Complete failed: ${completeError.message}`);
-                            }
+                        // Display result differently based on win type
+                        const winType = wager.data?.winType;
+                        if (winType === 'big_win') {
+                            this.updateResultDisplay(`🎆 BigWin! Won ${this.currencySymbol}${winAmount.toFixed(2)}! Preparing Bonus Spin...`, true);
+                            this.log(`🎆 BigWin! Won: ${winAmount}, Balance: ${this.balance}`);
+                        } else {
+                            this.displayResult(isWin, winAmount);
                         }
 
                         this.updateBalance();
 
-                        // Remove spinning animation
+                        // Remove spinning animation for first spin
                         [this.elements.reel1, this.elements.reel2, this.elements.reel3].forEach(reel => {
                             reel.classList.remove('spinning');
                         });
 
-                        this.isSpinning = false;
-                        this.elements.spinButton.disabled = false;
+                        // Check if bonus spin should be triggered
+                        if (hasBonusSpin) {
+                            this.log('🎰 Triggering Bonus Spin in 2 seconds...');
+                            this.updateGameStatus('🎆 BigWin - Bonus Spin starting!');
+
+                            // Execute bonus spin after 2 seconds
+                            setTimeout(async () => {
+                                try {
+                                    // Add spinning animation for bonus spin
+                                    [this.elements.reel1, this.elements.reel2, this.elements.reel3].forEach(reel => {
+                                        reel.classList.add('spinning');
+                                    });
+                                    this.updateResultDisplay('🎰 Bonus Spin Spinning...', null);
+
+                                    this.logSeparator('Bonus Spin');
+                                    this.log('🎰 Executing Bonus Spin...');
+
+                                    // Call bonus spin via connector
+                                    const bonusResult = await this.connector.play(
+                                        "bonus_spin",
+                                        betAmount,
+                                        { roundId: playResult.roundId },
+                                        null,
+                                        false,
+                                        false
+                                    );
+
+                                    this.log('✅ Bonus Spin result received');
+
+                                    // Update balance from bonus result
+                                    if (bonusResult.balance !== undefined) {
+                                        this.balance = bonusResult.balance;
+                                    }
+
+                                    // Display bonus result after 1 second
+                                    setTimeout(() => {
+                                        const bonusWager = bonusResult.wager;
+                                        const bonusSymbols = bonusWager.data?.symbols || ['SYM2', 'SYM3', 'SYM4'];
+                                        const bonusWin = bonusWager.win || 0;
+                                        const bonusWinType = bonusWager.data?.winType;
+                                        const totalWin = bonusResult.totalWin || (winAmount + bonusWin);
+
+                                        // Display bonus symbols
+                                        this.displaySymbols(bonusSymbols);
+
+                                        // Display result based on bonus win type
+                                        if (bonusWinType === 'super_win') {
+                                            this.updateResultDisplay(
+                                                `🎆🎆 SUPER WIN! Won ${this.currencySymbol}${bonusWin.toFixed(2)}! Total: ${this.currencySymbol}${totalWin.toFixed(2)}!`,
+                                                true
+                                            );
+                                            this.log(`🎆🎆 SUPER WIN! Bonus win: ${bonusWin}, Total win: ${totalWin}, Balance: ${this.balance}`);
+                                        } else if (bonusWin > 0) {
+                                            this.updateResultDisplay(
+                                                `🎉 Bonus Spin Win! Won ${this.currencySymbol}${bonusWin.toFixed(2)}! Total: ${this.currencySymbol}${totalWin.toFixed(2)}!`,
+                                                true
+                                            );
+                                            this.log(`✅ Bonus Spin Win! Bonus win: ${bonusWin}, Total win: ${totalWin}, Balance: ${this.balance}`);
+                                        } else {
+                                            this.updateResultDisplay(
+                                                `😔 Bonus Spin no win. Total: ${this.currencySymbol}${totalWin.toFixed(2)}, Balance: ${this.currencySymbol}${this.balance.toFixed(2)}`,
+                                                false
+                                            );
+                                            this.log(`❌ Bonus Spin no win. Total win: ${totalWin}, Balance: ${this.balance}`);
+                                        }
+
+                                        this.updateBalance();
+                                        this.updateGameStatus('Game ready!');
+
+                                        // Remove spinning animation
+                                        [this.elements.reel1, this.elements.reel2, this.elements.reel3].forEach(reel => {
+                                            reel.classList.remove('spinning');
+                                        });
+
+                                        this.isSpinning = false;
+                                        this.elements.spinButton.disabled = false;
+                                    }, 1000);
+
+                                } catch (error) {
+                                    this.log(`❌ Bonus Spin failed: ${error.message}`);
+                                    console.error('Bonus spin error:', error);
+
+                                    // Cleanup on error
+                                    [this.elements.reel1, this.elements.reel2, this.elements.reel3].forEach(reel => {
+                                        reel.classList.remove('spinning');
+                                    });
+                                    this.updateGameStatus('Game ready!');
+                                    this.isSpinning = false;
+                                    this.elements.spinButton.disabled = false;
+                                }
+                            }, 2000); // 2 second delay before bonus spin
+
+                        } else {
+                            // No bonus spin, complete round normally
+                            if (isWin && winAmount > 0) {
+                                try {
+                                    const completeResult = await this.connector.complete(false);
+                                    if (completeResult.balance !== undefined) {
+                                        this.balance = completeResult.balance;
+                                    }
+                                    this.log(`✅ Round completed, final balance: ${this.balance}`);
+                                } catch (completeError) {
+                                    this.log(`⚠️ Complete failed: ${completeError.message}`);
+                                }
+                            }
+
+                            this.isSpinning = false;
+                            this.elements.spinButton.disabled = false;
+                        }
                     }, 1000);
 
                 } catch (error) {
@@ -564,6 +679,33 @@
                     this.elements.resultDisplay.classList.add('result-lose');
                 } else {
                     this.elements.resultDisplay.classList.add('loading');
+                }
+            }
+
+            cycleCheat() {
+                // Cycle through cheat codes: null → bigWin → superWin → win → null
+                if (!this.activeCheat) {
+                    this.activeCheat = 'bigWin';
+                } else if (this.activeCheat === 'bigWin') {
+                    this.activeCheat = 'superWin';
+                } else if (this.activeCheat === 'superWin') {
+                    this.activeCheat = 'win';
+                } else {
+                    this.activeCheat = null;
+                }
+
+                // Update UI and log
+                if (this.activeCheat) {
+                    const cheatDescriptions = {
+                        'win': 'Normal Win (2x)',
+                        'bigWin': 'BigWin (10x) + Bonus Spin',
+                        'superWin': 'SuperWin (50x via Bonus Spin)'
+                    };
+                    this.log(`🎯 Cheat code activated: ${this.activeCheat} - ${cheatDescriptions[this.activeCheat]}`);
+                    this.updateGameStatus(`🎯 Cheat mode: ${this.activeCheat}`);
+                } else {
+                    this.log(`🎯 Cheat code off - back to normal random mode`);
+                    this.updateGameStatus('Game ready!');
                 }
             }
         }
