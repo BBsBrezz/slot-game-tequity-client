@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -229,33 +229,33 @@
 </head>
 <body>
     <div class="game-container">
-        <h1 class="game-title">🎰 老虎機遊戲 (HTTP API 測試)</h1>
-        
+        <h1 class="game-title">🎰 Slot Game (HTTP API Test)</h1>
+
         <div class="status-info">
-            <div class="connection-status disconnected" id="connectionStatus">❌ 未登入</div>
-            <div id="gameStatus">點擊下方按鈕測試 API</div>
-            <div class="login-prompt" id="loginPrompt">🔐 請先點擊「測試認證」按鈕進行登入</div>
-            <div class="balance-display hidden" id="balanceDisplay">餘額: $<span id="balance">0.00</span></div>
+            <div class="connection-status disconnected" id="connectionStatus">❌ Not Logged In</div>
+            <div id="gameStatus">Click buttons below to test API</div>
+            <div class="login-prompt" id="loginPrompt">🔐 Please click "Authenticate" button to login</div>
+            <div class="balance-display hidden" id="balanceDisplay">Balance: $<span id="balance">0.00</span></div>
         </div>
-        
+
         <div class="test-buttons">
-            <button class="test-button" onclick="testGames()">測試遊戲列表</button>
-            <button class="test-button" onclick="testAuthenticate()">測試認證</button>
-            <button class="test-button" onclick="testConfig()">測試配置</button>
-            <button class="test-button" onclick="testBets()">測試下注</button>
-            <button class="test-button" onclick="testInfo()">測試資訊</button>
-            <button class="test-button" onclick="testCheats()">測試作弊</button>
-            <button class="test-button" onclick="testPlay()">測試遊戲</button>
-            <button class="test-button" onclick="testAction()">測試動作</button>
-            <button class="test-button" onclick="testValidate()">測試驗證</button>
-            <button class="test-button" onclick="testEvaluate()">測試評估</button>
-            <button class="test-button" onclick="testChecksum()">測試校驗</button>
-            <button class="test-button" onclick="testHealth()">健康檢查</button>
-            <button class="test-button" onclick="clearLog()">清除日誌</button>
+            <button class="test-button" onclick="testGames()">Games</button>
+            <button class="test-button" onclick="testAuthenticate()">Authenticate</button>
+            <button class="test-button" onclick="testConfig()">Config</button>
+            <button class="test-button" onclick="testBets()">Bets</button>
+            <button class="test-button" onclick="testInfo()">Info</button>
+            <button class="test-button" onclick="testCheats()">Cheats</button>
+            <button class="test-button" onclick="testPlay()">Play</button>
+            <button class="test-button" onclick="testAction()">Action</button>
+            <button class="test-button" onclick="testValidate()">Validate</button>
+            <button class="test-button" onclick="testEvaluate()">Evaluate</button>
+            <button class="test-button" onclick="testChecksum()">Checksum</button>
+            <button class="test-button" onclick="testHealth()">Health</button>
+            <button class="test-button" onclick="clearLog()">Clear Log</button>
         </div>
-        
+
         <div class="api-log" id="apiLog">
-            等待 API 測試...
+            Waiting for API tests...
         </div>
         
         <div class="reels-container">
@@ -266,7 +266,7 @@
         
         <div class="controls">
             <div class="bet-selector">
-                <label for="betAmount">選擇下注金額:</label>
+                <label for="betAmount">Select Bet Amount:</label>
                 <select id="betAmount">
                     <option value="1">$1</option>
                     <option value="2">$2</option>
@@ -278,14 +278,14 @@
                     <option value="200">$200</option>
                 </select>
             </div>
-            
+
             <button class="spin-button" id="spinButton" onclick="simulateSpin()">
-                模擬旋轉 (測試用)
+                Spin
             </button>
         </div>
-        
+
         <div class="result-display" id="resultDisplay">
-            歡迎來到老虎機遊戲 API 測試頁面！
+            Welcome to Slot Game API Test Page!
         </div>
     </div>
 
@@ -331,8 +331,8 @@
         
         async function makeHTTPRequest(endpoint, data) {
             try {
-                log(`發送請求到: ${endpoint}`);
-                log(`請求資料: ${JSON.stringify(data, null, 2)}`);
+                log(`Sending request to: ${endpoint}`);
+                log(`Request data: ${JSON.stringify(data, null, 2)}`);
                 
                 const response = await fetch(`http://localhost:8080/slot-game-provider/slot-game${endpoint}`, {
                     method: 'POST',
@@ -342,10 +342,10 @@
                     body: JSON.stringify(data)
                 });
                 
-                log(`回應狀態: ${response.status} ${response.statusText}`);
+                log(`Response status: ${response.status} ${response.statusText}`);
                 
                 const responseText = await response.text();
-                log(`原始回應: ${responseText}`);
+                log(`Raw response: ${responseText}`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -357,29 +357,29 @@
                 return jsonData;
                 
             } catch (error) {
-                log(`錯誤: ${error.message}`);
+                log(`Error: ${error.message}`);
                 throw error;
             }
         }
         
         async function testGames() {
             try {
-                logSeparator('測試遊戲列表');
+                logSeparator('Test Games API');
                 const response = await fetch(`http://localhost:8080/api/games`, {
                     method: 'GET',
                 });
                 const result = await response.json();
-                log(`遊戲列表 API 回應: ${JSON.stringify(result, null, 2)}`);
-                log('✅ 遊戲列表 API 測試成功！');
+                log(`Games API response: ${JSON.stringify(result, null, 2)}`);
+                log('✅ Games API test successful！');
             } catch (error) {
-                log(`❌ 遊戲列表 API 測試失敗: ${error.message}`);
+                log(`❌ Games API test failed: ${error.message}`);
             }
         }
 
         async function testAuthenticate() {
             try {
-                logSeparator('測試認證');
-                document.getElementById('connectionStatus').textContent = '⏳ 認證中...';
+                logSeparator('Test Authenticate API');
+                document.getElementById('connectionStatus').textContent = '⏳ Authenticating...';
                 document.getElementById('connectionStatus').className = 'connection-status connecting';
 
                 const result = await makeHTTPRequest('/authenticate', {
@@ -388,88 +388,88 @@
                     key: "test-player-123:1000:eur"
                 });
 
-                // 儲存認證資訊
+                // Store authentication info
                 currentSessionId = result.sessionId;
                 currentBalance = result.balance;
                 currentCurrency = result.currency;
 
-                // 更新畫面顯示 - 隱藏登入提示，顯示餘額
+                // Update UI - hide login prompt, show balance
                 document.getElementById('loginPrompt').classList.add('hidden');
                 document.getElementById('balanceDisplay').classList.remove('hidden');
                 document.getElementById('balance').textContent = currentBalance;
 
                 document.getElementById('connectionStatus').textContent = '✅ 已登入';
                 document.getElementById('connectionStatus').className = 'connection-status connected';
-                log(`✅ 認證測試成功！SessionID: ${currentSessionId}, 餘額: ${currentBalance} ${currentCurrency}`);
+                log(`✅ Authentication test successful！SessionID: ${currentSessionId}, Balance: ${currentBalance} ${currentCurrency}`);
 
             } catch (error) {
-                document.getElementById('connectionStatus').textContent = '❌ 認證失敗';
+                document.getElementById('connectionStatus').textContent = '❌ Authentication failed';
                 document.getElementById('connectionStatus').className = 'connection-status disconnected';
-                log(`❌ 認證測試失敗: ${error.message}`);
+                log(`❌ Authentication test failed: ${error.message}`);
             }
         }
         
         async function testConfig() {
             try {
-                logSeparator('測試配置');
+                logSeparator('Test Config API');
                 const response = await fetch(`http://localhost:8080/slot-game-provider/slot-game/config`, {
                     method: 'GET',
                 });
                 const result = await response.json();
-                log(`配置 API 回應: ${JSON.stringify(result, null, 2)}`);
-                log('✅ 配置 API 測試成功！');
+                log(`Config API response: ${JSON.stringify(result, null, 2)}`);
+                log('✅ Config API test successful！');
             } catch (error) {
-                log(`❌ 配置 API 測試失敗: ${error.message}`);
+                log(`❌ Config API test failed: ${error.message}`);
             }
         }
 
         async function testBets() {
             try {
-                logSeparator('測試下注配置');
+                logSeparator('Test Bets API');
                 const response = await fetch(`http://localhost:8080/slot-game-provider/slot-game/bets`, {
                     method: 'GET',
                 });
                 const result = await response.json();
-                log(`下注配置 API 回應: ${JSON.stringify(result, null, 2)}`);
-                log('✅ 下注配置 API 測試成功！');
+                log(`下注Config API response: ${JSON.stringify(result, null, 2)}`);
+                log('✅ 下注Config API test successful！');
             } catch (error) {
-                log(`❌ 下注配置 API 測試失敗: ${error.message}`);
+                log(`❌ 下注Config API test failed: ${error.message}`);
             }
         }
 
         async function testInfo() {
             try {
-                logSeparator('測試資訊');
-                // 先確保已認證
+                logSeparator('Test Info API');
+                // Ensure authentication first
                 if (!currentSessionId) {
-                    log('⚠️ 需要先認證，自動執行認證...');
+                    log('⚠️ Need authentication first, auto-authenticating...');
                     await testAuthenticate();
                 }
 
                 const result = await makeHTTPRequest('/info', {
                     sessionId: currentSessionId
                 });
-                log('✅ 資訊 API 測試成功！');
-                log(`遊戲資訊: ${JSON.stringify(result, null, 2)}`);
+                log('✅ Info API test successful！');
+                log(`Game info: ${JSON.stringify(result, null, 2)}`);
             } catch (error) {
-                log(`❌ 資訊 API 測試失敗: ${error.message}`);
+                log(`❌ Info API test failed: ${error.message}`);
             }
         }
 
         async function testCheats() {
             try {
-                logSeparator('測試作弊');
+                logSeparator('Test Cheats API');
                 const response = await fetch(`http://localhost:8080/slot-game-provider/slot-game/cheats`, {
                     method: 'GET',
                 });
                 const result = await response.json();
-                log(`作弊 API 回應: ${JSON.stringify(result, null, 2)}`);
-                log('✅ 作弊 API 測試成功！');
+                log(`Cheats API response: ${JSON.stringify(result, null, 2)}`);
+                log('✅ Cheats API test successful！');
 
                 // 循環切換作弊碼：bigWin → superWin → win → null
                 if (result.main && result.main.length > 0) {
                     if (!activeCheat) {
-                        activeCheat = 'bigWin';  // 第一次按就設為 bigWin，方便測試 bonus spin
+                        activeCheat = 'bigWin';  // First press sets bigWin for easier bonus spin testing
                     } else if (activeCheat === 'bigWin') {
                         activeCheat = 'superWin';
                     } else if (activeCheat === 'superWin') {
@@ -480,56 +480,56 @@
 
                     if (activeCheat) {
                         let cheatDescription = {
-                            'win': '普通中獎 (2x)',
+                            'win': 'Normal Win (2x)',
                             'bigWin': 'BigWin (10x) + Bonus Spin',
                             'superWin': 'SuperWin (50x)'
                         };
-                        log(`🎯 已啟用作弊碼: ${activeCheat} - ${cheatDescription[activeCheat]}`);
-                        document.getElementById('gameStatus').textContent = `🎯 作弊模式: ${activeCheat}`;
+                        log(`🎯 Cheat code activated: ${activeCheat} - ${cheatDescription[activeCheat]}`);
+                        document.getElementById('gameStatus').textContent = `🎯 Cheat mode: ${activeCheat}`;
                     } else {
-                        log(`🎯 作弊碼已關閉 - 恢復正常隨機模式`);
-                        document.getElementById('gameStatus').textContent = '頁面已載入，可以測試 API';
+                        log(`🎯 Cheat code off - back to normal random mode`);
+                        document.getElementById('gameStatus').textContent = 'Page loaded, ready to test API';
                     }
                 }
             } catch (error) {
-                log(`❌ 作弊 API 測試失敗: ${error.message}`);
+                log(`❌ Cheats API test failed: ${error.message}`);
             }
         }
 
         async function testValidate() {
             try {
-                logSeparator('測試驗證');
+                logSeparator('Test Validate API');
                 const result = await makeHTTPRequest('/validate', {
                     action: "main",
                     bet: 10
                 });
-                log(`驗證結果: ${result.valid ? '有效' : '無效'}`);
-                log('✅ 驗證 API 測試成功！');
+                log(`Validation result: ${result.valid ? 'valid' : 'invalid'}`);
+                log('✅ Validate API test successful！');
             } catch (error) {
-                log(`❌ 驗證 API 測試失敗: ${error.message}`);
+                log(`❌ Validate API test failed: ${error.message}`);
             }
         }
 
         async function testHealth() {
             try {
-                logSeparator('健康檢查');
+                logSeparator('Test Health API');
                 const response = await fetch(`http://localhost:8080/health`, {
                     method: 'GET',
                 });
                 const result = await response.text();
-                log(`健康檢查回應: ${result}`);
-                log('✅ 健康檢查測試成功！');
+                log(`Test Health API回應: ${result}`);
+                log('✅ Test Health API測試成功！');
             } catch (error) {
-                log(`❌ 健康檢查測試失敗: ${error.message}`);
+                log(`❌ Test Health API測試失敗: ${error.message}`);
             }
         }
         
         async function testPlay() {
             try {
-                logSeparator('測試遊戲');
-                // 先確保已認證
+                logSeparator('Test Play API');
+                // Ensure authentication first
                 if (!currentSessionId) {
-                    log('⚠️ 需要先認證，自動執行認證...');
+                    log('⚠️ Need authentication first, auto-authenticating...');
                     await testAuthenticate();
                 }
 
@@ -540,7 +540,7 @@
                     bet: betAmount
                 });
 
-                log(`✅ 遊戲 API 測試成功！下注: ${betAmount}, 獲勝: ${result.wager.win}`);
+                log(`✅ Play API test successful！Bet: ${betAmount}, Win: ${result.wager.win}`);
 
                 // 顯示遊戲結果
                 if (result.wager && result.wager.data && result.wager.data.symbols) {
@@ -549,9 +549,9 @@
                     const winAmount = result.wager.win || 0;
 
                     if (isWin) {
-                        log(`🎉 中獎！符號: [${result.wager.data.symbols.join(', ')}], 獲得: ${winAmount}`);
+                        log(`🎉 Win!Symbols: [${result.wager.data.symbols.join(', ')}], Won: ${winAmount}`);
                     } else {
-                        log(`😢 沒中獎。符號: [${result.wager.data.symbols.join(', ')}]`);
+                        log(`😢 No win。Symbols: [${result.wager.data.symbols.join(', ')}]`);
                     }
 
                     // 更新餘額
@@ -559,7 +559,7 @@
                 }
 
             } catch (error) {
-                log(`❌ 遊戲 API 測試失敗: ${error.message}`);
+                log(`❌ Play API test failed: ${error.message}`);
             }
         }
         
@@ -570,7 +570,7 @@
         }
         
         async function simulateSpin() {
-            logSeparator('模擬旋轉');
+            logSeparator('Test Spin');
             const reels = ['reel1', 'reel2', 'reel3'];
             const symbols = Object.values(symbolMap);
 
@@ -579,13 +579,13 @@
                 document.getElementById(reelId).classList.add('spinning');
             });
 
-            document.getElementById('resultDisplay').textContent = '旋轉中...';
+            document.getElementById('resultDisplay').textContent = 'Spinning...';
             document.getElementById('spinButton').disabled = true;
 
             try {
-                // 先確保已認證
+                // Ensure authentication first
                 if (!currentSessionId) {
-                    log('⚠️ 需要先認證，自動執行認證...');
+                    log('⚠️ Need authentication first, auto-authenticating...');
                     await testAuthenticate();
                 }
 
@@ -600,18 +600,18 @@
                 // 如果有啟用作弊碼，加入請求中
                 if (activeCheat) {
                     playRequest.cheat = activeCheat;
-                    log(`🎯 使用作弊碼: ${activeCheat}`);
+                    log(`🎯 Using cheat code: ${activeCheat}`);
                 }
 
                 const result = await makeHTTPRequest('/play', playRequest);
 
-                log('🎰 開始旋轉！下注金額: ' + betAmount);
+                log('🎰 Starting spin! Bet amount: ' + betAmount);
 
                 // 使用後清除作弊碼（一次性使用）
                 if (activeCheat) {
-                    log(`🎯 作弊碼已使用並清除`);
+                    log(`🎯 Cheat code used and cleared`);
                     activeCheat = null;
-                    document.getElementById('gameStatus').textContent = '頁面已載入，可以測試 API';
+                    document.getElementById('gameStatus').textContent = 'Page loaded, ready to test API';
                 }
 
                 // 1秒後停止並顯示真實結果
@@ -632,16 +632,16 @@
                         let balance = result.balance;
 
                         if (isWin) {
-                            let winMessage = `🎉 恭喜中獎！獲得 ${winAmount} 元！`;
+                            let winMessage = `🎉 恭喜Win!獲得 ${winAmount}  credits!`;
                             if (winType === 'big_win') {
-                                winMessage = `🎆 BigWin！獲得 ${winAmount} 元！準備 Bonus Spin...`;
+                                winMessage = `🎆 BigWin！獲得 ${winAmount}  credits!Preparing Bonus Spin...`;
                             }
                             document.getElementById('resultDisplay').textContent = winMessage;
-                            log(`✅ 中獎！類型: ${winType}, 符號: [${serverSymbols.join(', ')}], 獲得: ${winAmount}, 餘額: ${balance}`);
+                            log(`✅ Win!Type: ${winType}, Symbols: [${serverSymbols.join(', ')}], Won: ${winAmount}, Balance: ${balance}`);
                         } else {
                             document.getElementById('resultDisplay').textContent =
-                                `😢 沒有中獎！餘額: ${balance}`;
-                            log(`❌ 沒中獎。符號: [${serverSymbols.join(', ')}], 餘額: ${balance}`);
+                                `😢 沒有Win!Balance: ${balance}`;
+                            log(`❌ No win。Symbols: [${serverSymbols.join(', ')}], Balance: ${balance}`);
                         }
 
                         // 更新餘額顯示
@@ -649,8 +649,8 @@
 
                         // 檢查是否有 next 動作（bigWin 觸發 bonus_spin）
                         if (result.wager.next && result.wager.next.includes('bonus_spin')) {
-                            log('🎰 觸發 Bonus Spin！等待 2 秒後自動旋轉...');
-                            document.getElementById('gameStatus').textContent = '🎆 BigWin - Bonus Spin 即將開始！';
+                            log('🎰 Triggered Bonus Spin! Auto-spinning in 2 seconds...');
+                            document.getElementById('gameStatus').textContent = '🎆 BigWin - Bonus Spin starting！';
 
                             // 2秒後執行 bonus spin
                             setTimeout(async () => {
@@ -659,7 +659,7 @@
                                     reels.forEach(reelId => {
                                         document.getElementById(reelId).classList.add('spinning');
                                     });
-                                    document.getElementById('resultDisplay').textContent = '🎰 Bonus Spin 旋轉中...';
+                                    document.getElementById('resultDisplay').textContent = '🎰 Bonus Spin Spinning...';
 
                                     // 標準 Tequity 做法：再次調用 /play，傳遞 action 和 roundId
                                     const bonusResult = await makeHTTPRequest('/play', {
@@ -669,7 +669,7 @@
                                         bet: betAmount
                                     });
 
-                                    log('🎆 Bonus Spin 完成！');
+                                    log('🎆 Bonus Spin completed！');
 
                                     // 1秒後顯示 bonus spin 結果
                                     setTimeout(() => {
@@ -688,27 +688,27 @@
 
                                             if (bonusWinType === 'super_win') {
                                                 document.getElementById('resultDisplay').textContent =
-                                                    `🎆🎆 SUPER WIN！！！獲得 ${bonusWin} 元！總獎金: ${totalWin} 元！餘額: ${balance}`;
-                                                log(`🎆🎆 SUPER WIN！符號: [${bonusSymbols.join(', ')}], Bonus 獎金: ${bonusWin}, 總獎金: ${totalWin}, 新餘額: ${balance}`);
+                                                    `🎆🎆 SUPER WIN！！！獲得 ${bonusWin}  credits!Total win: ${totalWin}  credits!Balance: ${balance}`;
+                                                log(`🎆🎆 SUPER WIN！Symbols: [${bonusSymbols.join(', ')}], Bonus win: ${bonusWin}, Total win: ${totalWin}, 新Balance: ${balance}`);
                                             } else if (bonusResult.wager.data.isWin) {
                                                 document.getElementById('resultDisplay').textContent =
-                                                    `🎉 Bonus Spin 中獎！獲得 ${bonusWin} 元！總獎金: ${totalWin} 元！餘額: ${balance}`;
-                                                log(`✅ Bonus Spin 中獎！符號: [${bonusSymbols.join(', ')}], 獎金: ${bonusWin}, 總獎金: ${totalWin}, 新餘額: ${balance}`);
+                                                    `🎉 Bonus Spin Win!獲得 ${bonusWin}  credits!Total win: ${totalWin}  credits!Balance: ${balance}`;
+                                                log(`✅ Bonus Spin Win!Symbols: [${bonusSymbols.join(', ')}], 獎金: ${bonusWin}, Total win: ${totalWin}, 新Balance: ${balance}`);
                                             } else {
                                                 document.getElementById('resultDisplay').textContent =
-                                                    `😢 Bonus Spin 沒中獎。總獎金: ${totalWin} 元，餘額: ${balance}`;
-                                                log(`❌ Bonus Spin 沒中獎。符號: [${bonusSymbols.join(', ')}], 總獎金: ${totalWin}, 餘額: ${balance}`);
+                                                    `😢 Bonus Spin No win。Total win: ${totalWin}  credits, Balance: ${balance}`;
+                                                log(`❌ Bonus Spin No win。Symbols: [${bonusSymbols.join(', ')}], Total win: ${totalWin}, Balance: ${balance}`);
                                             }
 
                                             // 更新餘額顯示
                                             document.getElementById('balance').textContent = balance;
-                                            document.getElementById('gameStatus').textContent = '頁面已載入，可以測試 API';
+                                            document.getElementById('gameStatus').textContent = 'Page loaded, ready to test API';
                                         }
                                         document.getElementById('spinButton').disabled = false;
                                     }, 1000);
 
                                 } catch (error) {
-                                    log(`❌ Bonus Spin 失敗: ${error.message}`);
+                                    log(`❌ Bonus Spin failed: ${error.message}`);
                                     reels.forEach(reelId => {
                                         document.getElementById(reelId).classList.remove('spinning');
                                     });
@@ -719,8 +719,8 @@
                             document.getElementById('spinButton').disabled = false;
                         }
                     } else {
-                        document.getElementById('resultDisplay').textContent = '❌ API 返回格式錯誤';
-                        log(`❌ API 返回格式錯誤: ${JSON.stringify(result)}`);
+                        document.getElementById('resultDisplay').textContent = '❌ API returned invalid format';
+                        log(`❌ API 返回格式Error: ${JSON.stringify(result)}`);
                         document.getElementById('spinButton').disabled = false;
                     }
                 }, 1000);
@@ -729,28 +729,28 @@
                 reels.forEach(reelId => {
                     document.getElementById(reelId).classList.remove('spinning');
                 });
-                document.getElementById('resultDisplay').textContent = '❌ API 呼叫失敗';
+                document.getElementById('resultDisplay').textContent = '❌ API call failed';
                 document.getElementById('spinButton').disabled = false;
-                log(`❌ 旋轉失敗: ${error.message}`);
+                log(`❌ Spin failed: ${error.message}`);
             }
         }
         
         async function testAction() {
             try {
-                logSeparator('測試動作');
+                logSeparator('Test Action API');
                 const result = await makeHTTPRequest('/action', {
                     next: ["main"],
                     config: {}
                 });
-                log('✅ 動作 API 測試成功！');
+                log('✅ Action API test successful！');
             } catch (error) {
-                log(`❌ 動作 API 測試失敗: ${error.message}`);
+                log(`❌ Action API test failed: ${error.message}`);
             }
         }
 
         async function testEvaluate() {
             try {
-                logSeparator('測試評估');
+                logSeparator('Test Evaluate API');
                 const result = await makeHTTPRequest('/evaluate', {
                     type: "regulatory-pt",
                     wagers: [{
@@ -761,29 +761,29 @@
                         bet: 5
                     }]
                 });
-                log('✅ 評估 API 測試成功！');
-                log(`評估結果: ${JSON.stringify(result, null, 2)}`);
+                log('✅ Evaluate API test successful！');
+                log(`Evaluation result: ${JSON.stringify(result, null, 2)}`);
             } catch (error) {
-                log(`❌ 評估 API 測試失敗: ${error.message}`);
+                log(`❌ Evaluate API test failed: ${error.message}`);
             }
         }
 
         async function testChecksum() {
             try {
-                logSeparator('測試校驗');
+                logSeparator('Test Checksum API');
                 const response = await fetch('http://localhost:8080/criticalFileChecksum?criticalFilePath=games/slot-game/index.ts');
                 const result = await response.json();
-                log('✅ 校驗 API 測試成功！');
-                log(`校驗碼: ${result.checksum}`);
+                log('✅ Checksum API test successful！');
+                log(`Checksum: ${result.checksum}`);
             } catch (error) {
-                log(`❌ 校驗 API 測試失敗: ${error.message}`);
+                log(`❌ Checksum API test failed: ${error.message}`);
             }
         }
 
         // 頁面載入完成
         document.addEventListener('DOMContentLoaded', () => {
-            log('🎮 頁面載入完成，可以開始測試 API！');
-            document.getElementById('gameStatus').textContent = '頁面已載入，可以測試 API';
+            log('🎮 Page loaded successfully, ready to test API！');
+            document.getElementById('gameStatus').textContent = 'Page loaded, ready to test API';
         });
     </script>
 </body>
