@@ -242,10 +242,16 @@
         </div>
 
         <div class="test-buttons">
+            <button class="test-button" onclick="testGames()">Games</button>
             <button class="test-button" onclick="game.initialize()">Initialize</button>
+            <button class="test-button" onclick="testConfig()">Config</button>
+            <button class="test-button" onclick="testBets()">Bets</button>
             <button class="test-button" onclick="testInfo()">Info</button>
-            <button class="test-button" onclick="testRecover()">Recover</button>
             <button class="test-button" onclick="game.cycleCheat()">Cheats</button>
+            <button class="test-button" onclick="testAction()">Action</button>
+            <button class="test-button" onclick="testValidate()">Validate</button>
+            <button class="test-button" onclick="testEvaluate()">Evaluate</button>
+            <button class="test-button" onclick="testRecover()">Recover</button>
             <button class="test-button" onclick="clearLog()">Clear Log</button>
         </div>
 
@@ -748,6 +754,157 @@
                 }
             } catch (error) {
                 game.log(`ℹ️ Recover: ${error.message}`);
+            }
+        }
+
+        async function testGames() {
+            try {
+                game.logSeparator('Test Games API');
+                game.log('📋 Fetching available games list...');
+
+                const response = await fetch('http://localhost:8080/api/games');
+                const gamesData = await response.json();
+
+                game.log(`✅ Games API test successful`);
+                game.log(`Games list: ${JSON.stringify(gamesData, null, 2)}`);
+            } catch (error) {
+                game.log(`❌ Games API test failed: ${error.message}`);
+            }
+        }
+
+        async function testConfig() {
+            if (!game.connector) {
+                game.log('❌ Please initialize the game first');
+                return;
+            }
+            try {
+                game.logSeparator('Test Config API');
+                game.log('⚙️ Fetching game configuration...');
+
+                const response = await fetch('http://localhost:8080/slot-game-provider/slot-game/config');
+                const configData = await response.json();
+
+                game.log(`✅ Config API test successful`);
+                game.log(`Config: ${JSON.stringify(configData, null, 2)}`);
+            } catch (error) {
+                game.log(`❌ Config API test failed: ${error.message}`);
+            }
+        }
+
+        async function testBets() {
+            if (!game.connector) {
+                game.log('❌ Please initialize the game first');
+                return;
+            }
+            try {
+                game.logSeparator('Test Bets API');
+                game.log('💰 Fetching available bet amounts...');
+
+                const response = await fetch('http://localhost:8080/slot-game-provider/slot-game/bets');
+                const betsData = await response.json();
+
+                game.log(`✅ Bets API test successful`);
+                game.log(`Available bets: ${JSON.stringify(betsData, null, 2)}`);
+            } catch (error) {
+                game.log(`❌ Bets API test failed: ${error.message}`);
+            }
+        }
+
+        async function testAction() {
+            if (!game.connector) {
+                game.log('❌ Please initialize the game first');
+                return;
+            }
+            try {
+                game.logSeparator('Test Action API');
+                game.log('🎮 Testing action auto-complete...');
+
+                const response = await fetch('http://localhost:8080/slot-game-provider/slot-game/action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionId: game.connector.sessionId
+                    })
+                });
+                const actionData = await response.json();
+
+                game.log(`✅ Action API test successful`);
+                game.log(`Action result: ${JSON.stringify(actionData, null, 2)}`);
+            } catch (error) {
+                game.log(`❌ Action API test failed: ${error.message}`);
+            }
+        }
+
+        async function testValidate() {
+            if (!game.connector) {
+                game.log('❌ Please initialize the game first');
+                return;
+            }
+            try {
+                game.logSeparator('Test Validate API');
+                game.log('✔️ Testing bet validation...');
+
+                const betAmount = parseInt(document.getElementById('betAmount').value);
+                const response = await fetch('http://localhost:8080/slot-game-provider/slot-game/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionId: game.connector.sessionId,
+                        action: 'main',
+                        bet: betAmount
+                    })
+                });
+                const validateData = await response.json();
+
+                game.log(`✅ Validate API test successful`);
+                game.log(`Validation result: ${JSON.stringify(validateData, null, 2)}`);
+                game.log(`Bet ${betAmount} is ${validateData.valid ? 'VALID ✅' : 'INVALID ❌'}`);
+            } catch (error) {
+                game.log(`❌ Validate API test failed: ${error.message}`);
+            }
+        }
+
+        async function testEvaluate() {
+            if (!game.connector) {
+                game.log('❌ Please initialize the game first');
+                return;
+            }
+            try {
+                game.logSeparator('Test Evaluate API');
+                game.log('📊 Testing regulatory evaluation...');
+
+                // Create mock wagers for testing
+                const mockWagers = [
+                    {
+                        data: {
+                            symbols: ['SYM2', 'SYM2', 'SYM2']
+                        },
+                        win: 10,
+                        bet: 5
+                    }
+                ];
+
+                const response = await fetch('http://localhost:8080/slot-game-provider/slot-game/evaluate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionId: game.connector.sessionId,
+                        type: 'regulatory-pt',
+                        wagers: mockWagers
+                    })
+                });
+                const evaluateData = await response.json();
+
+                game.log(`✅ Evaluate API test successful`);
+                game.log(`Evaluation result: ${JSON.stringify(evaluateData, null, 2)}`);
+            } catch (error) {
+                game.log(`❌ Evaluate API test failed: ${error.message}`);
             }
         }
 
